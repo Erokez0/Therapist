@@ -1,0 +1,19 @@
+{
+    "include": ["./src", "node_modules"],
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "ES6",
+      "noImplicitAny": true,
+      "removeComments": true,
+      "preserveConstEnums": true,
+      "sourceMap": true,
+      "baseUrl": "./src",
+      "resolveJsonModule": true,
+      "esModuleInterop": true,
+      "outDir": "./dist",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "moduleResolution": "node",
+      "skipLibCheck": true,
+    },
+}
