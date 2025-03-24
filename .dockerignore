@@ -27,3 +27,4 @@
 node_modules
 LICENSE
 README.md
+.env
