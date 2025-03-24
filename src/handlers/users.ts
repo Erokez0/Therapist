@@ -12,7 +12,7 @@ export const usersHandlers = {
     async createUser(message: Message): Promise<void> {
         try {
             if(!lib.isAdmin(message)) return;
-            const userParamsArr = message.text.split(" ").splice(1);
+            const userParamsArr = message.text.split(/\s/g).splice(1);
             const user: userData = {
                 name: userParamsArr[0], 
                 group: userParamsArr[1], 
@@ -51,7 +51,7 @@ export const usersHandlers = {
     async deleteUser(message: Message): Promise<void> {
         try {
             if(!lib.isAdmin(message)) return;
-            const id: string = message.text.split(" ").splice(1)[0];
+            const id: string = message.text.split(/\s/g).splice(1)[0];
             await userServices.deleteUser({id: +id});
             bot.sendMessage(message.chat.id, "Пользователь успешно удалён");
         } catch (e) {

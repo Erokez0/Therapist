@@ -48,6 +48,17 @@ export const entriesServices = {
             throw e;
         }
     },
+    async findOne(findData: entryFindData): Promise<Entries> {
+        try {
+            const foundEntry = await entriesRepository.findOneOrFail(
+                {where: findData, 
+                    relations: {user: true, therapist: true}, 
+                    order: {date: "asc"}});
+            return foundEntry;
+        } catch (e) {
+            return null;
+        }
+    },
 
     async updateEntry(findData: entryFindData, updateData: entryUpdateData): Promise<void> {
         try {

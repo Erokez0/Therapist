@@ -6,18 +6,23 @@ import { Therapists } from "entity/Therapists";
 import { readdir } from "fs/promises";
 import path from "path";
 import { createWriteStream } from "fs";
-import { dateWindows } from "index";
 import { therapistsServices } from "services/Therapists";
 import { entriesHandlers } from "handlers/entries";
+import { bot } from "index";
+import { And, IsNull, LessThan, Like, MoreThan, MoreThanOrEqual } from "typeorm";
 
 const adminsTelegrams = process.env.adminsTelegrams.split(" ");
-
 export const lib = {
     usersToString(users: Users[]): string {
         if(!users.length) return "Нет пользователей";
         let result = "";
         for(let user of users){
-            result += `id: ${user.id}\nname: ${user.name}\ngroup: ${user.group}\ntelegram: @${user.telegram}\n\n`;
+            result += `id: ${user.id}\nname: ${user.name}\ngroup: ${user.group}\n`;
+            if (user.telegram) {
+                result +=`telegram: @${user.telegram}\n\n`;
+            } else {
+                result += "\n";
+            }
         }
         return result;
     },
@@ -25,11 +30,14 @@ export const lib = {
         if(!entries.length) return "Нет записей";
         let result = "";
         for(let entry of entries) {
-            const user: Users = (await entriesServices.findEntries({id: entry.id}))[0].user;
-            const [name, group, telegram] = [ user.name, user.group, "@"+user.telegram]
+            const user: Users = (await entriesServices.findOne({id: entry.id})).user;
             const therapist = (await therapistsServices.getTherapistByTelegram(entry.therapist.telegram));
-            result += `ID: ${entry.id}\nПсихолог: ${therapist.name} @${therapist.telegram}\nДата и время: ${lib.timeStampToString(entry.date)}\nПользователь: ${name} ${group} ${telegram}\n\n`;
-            console.table(telegram)
+            result += `ID: ${entry.id}\nПсихолог: ${therapist.name} @${therapist.telegram}\nДата и время: ${lib.timeStampToString(entry.date)}\nПользователь: ${user.name} ${user.group} `;
+            if (user.telegram) {
+                result += `@${user.telegram}\n\n`;
+            } else {
+                result += "\n\n"
+            }
         }
         return result;
     },
@@ -42,12 +50,12 @@ export const lib = {
     },
     timeStampToString(timestamp: Date): string {
         const year: number = timestamp.getFullYear();
-        const month: number = timestamp.getMonth();
+        const month: number = timestamp.getMonth()+1;
         const day: number = timestamp.getDate();
 
         const hours: number = timestamp.getHours();
         const minutes: number = timestamp.getMinutes();
-        const result: string = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year} ${hours}:${String(minutes).padStart(2, "0")}`;
+        const result: string = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year} ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
         return result
     },
     therapistsToString(therapists: Therapists[]): string {
@@ -71,42 +79,70 @@ export const lib = {
             throw e;
         }
     },
-    async dateWindowsToString(dateWindows: any): Promise<string> {
-        if (!Object.keys(dateWindows).length) {
-            return "Нет окон для записи!";
-        };
-        let result = "";
-        for (const telegram in dateWindows) {
-            const therapist = (await therapistsServices.findTherapists({telegram:telegram}))[0];
-            result += `**Психолог**\n${therapist.name}\n`;
-            for (const date in dateWindows[telegram]) {
-                const prettyDate = date.split('-').reverse().join('.');
-                result += `\t\tДата\n\t\t${prettyDate}\n`;
-                for (const time in dateWindows[telegram][date]) {
-                    const ocupation = dateWindows[telegram][date][time] 
-                        ? "@"+dateWindows[telegram][date][time] 
-                        : "__Свободно__";
-                    result += `\t\t\t\t\t${time} - ${ocupation}\n`;
+    async dateWindowsToString(): Promise<string> {
+        let result = "***Все окна для записи***\n";
+        if (!(await entriesServices.findEntries({}, 'asc', 1, 0))[0]) {
+            return "***Нет окон для записи***";
+        }
+        entriesHandlers.remindAndDelete();
+        const therapists  = await therapistsServices.getTherapists();
+        for (const therapist of therapists) {
+            
+            const windows = await entriesServices.findEntries({therapist: therapist}, 'asc');
+            if (!windows.length) {
+                continue;
+            }
+            result += `${therapist.name} ${therapist.telegram}\n`;
+            let prevDate = ""
+            for (const window of windows) {
+                const fullDateString = lib.timeStampToString(window.date);
+                const stringDate = fullDateString.split(" ")[0];
+                const stringTime = fullDateString.split(" ")[1];
+                let userString;
+                if (!window.user) {
+                    userString = "Свободно";
+                } else if (window.user.telegram) {
+                    userString = `[${window.user.name} ${window.user.group}](https://t.me/${window.user.telegram})`;   
+                } else {
+                    userString = `${window.user.name} ${window.user.group}`;   
                 }
+                if (prevDate == stringDate) {
+                    result += `\t\t\t- ${stringTime} - ${userString}\n`;
+                } else {
+                    result += `${stringDate}\n\t\t\t- ${stringTime} - ${userString}\n`;
+                }
+                prevDate = stringDate;
             }
         }
         return result;
     },
-    dateWindowsToStringTg(dateWindows: any, telegram: string): string {
-
-        if (!dateWindows[telegram]) {
-            return "У вас нет окон!";
-        };
-        let result = "";
-        for (const date in dateWindows[telegram]) {
-            const prettyDate = date.split('-').reverse().join('.');
-            result += `Дата\n${prettyDate}\n`;
-            for (const time in dateWindows[telegram][date]) {
-                const ocupation = dateWindows[telegram][date][time] 
-                    ? "@"+dateWindows[telegram][date][time] 
-                    : "__Свободно__";
-                result += `\t\t\t${time} - ${ocupation}\n`;
+    async dateWindowsToStringTg(telegram: string): Promise<string> {
+        let result = "***Ваши окна для записи***\n";
+        entriesHandlers.remindAndDelete();
+        const therapist = await therapistsServices.getTherapistByTelegram(telegram);
+        const windows = await entriesServices.findEntries({therapist: therapist}, 'asc');
+        if (!windows.length) {
+            return "Похоже, у вас нет окон";
+        }
+        let prevDate = ""
+        for (const window of windows) {
+            const fullDateString = lib.timeStampToString(window.date);
+            const stringDate = fullDateString.split(" ")[0];
+            const stringTime = fullDateString.split(" ")[1];
+            let userString;
+            if (!window.user) {
+                userString = "Свободно";
+            } else if (window.user.telegram) {
+                userString = `[${window.user.name} ${window.user.group}](https://t.me/${window.user.telegram})`;   
+            } else {
+                    userString = `${window.user.name} ${window.user.group}`;   
+                }
+            if (prevDate == stringDate) {
+                result += `\t\t\t- ${stringTime} - ${userString}\n`
+            } else {
+                result += `${stringDate}\n\t\t\t- ${stringTime} - ${userString}\n`
             }
+            prevDate = stringDate
         }
         return result;
     },
@@ -122,7 +158,6 @@ export const lib = {
         now.setHours(0,0,0,0);
         const isFuture = date >= now;
         if (!isFuture) throw new Error(`Дата "${dateString}" относится к прошлому`);
-
         return true
     },
     /**
@@ -131,7 +166,7 @@ export const lib = {
      * @returns true если время введено правильно и не относится к прошлому, иначе ошибка
      */
     isValidTime(dateString: string, timeString: string): boolean {
-        const time = new Date(`${dateString}T${timeString}:00.000+03:00`);
+        const time = new Date(`${dateString}T${timeString}:00.000`);
         const isValid = time instanceof Date && isFinite(+time);
         const currentTime = new Date();
         if(!isValid) throw new Error(`Время "${timeString}" введено неправильно`);
@@ -139,65 +174,41 @@ export const lib = {
         if(!isFuture) throw new Error(`Время "${timeString}" относится к прошлому`);
         return true
     },
-
-    isDateFree(therapistTelegram: string, date: string): boolean {
-        const ocupations = Object.values(dateWindows[therapistTelegram][date]);
-        return ocupations.some(time => time == null);
-    },
-    getFreeDates(therapistTelegram: string): string[] {
-        if (!dateWindows[therapistTelegram]) return [];
-        const dates = Object.keys(dateWindows[therapistTelegram]);
-        const freeDates = dates.filter(date => {
-            return lib.isDateFree(therapistTelegram, date)
-        });
+    async getFreeDates(therapistChatId: number): Promise<string[]> {
+        const therapist = await therapistsServices.findTherapist({chatId: therapistChatId});
+        const dates = await entriesServices.findEntries(
+            {therapist: therapist, 
+            user: null, 
+            // @ts-expect-error
+            date: MoreThan(new Date())},
+             'asc');
+        if (!dates.length) return [];
+        let freeDates: string[] = [];
+        for (const date of dates) {
+            const dateString = lib.timeStampToString(date.date).split(" ")[0]
+            if (!freeDates.includes(dateString)) freeDates.push(dateString);
+        }
         return freeDates;
     },
     /**
-     * @description Удаляет невалидные даты
+     * @param therapistTelegram Telegram username психолога
+     * @param dateString дата в формате ГГГГ-ММ-ДД или ДД.ММ.ГГГГ
+     * @returns массив свободных времен 
      */
-    deleteInvalidDates() {
-        try {
-            for (const therapist in dateWindows) {
-                if  (!dateWindows[therapist] || Object.entries(dateWindows[therapist]).length == 0) {
-                    delete dateWindows[therapist];
-                }
-                for (const date in dateWindows[therapist]) {
-                    if (!dateWindows[therapist][date] || Object.entries(dateWindows[therapist][date]).length == 0) {
-                        delete dateWindows[therapist][date];
-                    }
-                    if  (!dateWindows[therapist] || Object.entries(dateWindows[therapist]).length == 0) {
-                        delete dateWindows[therapist];
-                    }
-                    try {
-                        lib.isValidDate(date)
-                    } catch {
-                        delete dateWindows[therapist][date];
-                    }
-                    for (const time in dateWindows[therapist][date]) {
-                        try {
-                            lib.isValidTime(date, time)
-                        } catch {
-                            delete dateWindows[therapist][date][time];
-                            if (!dateWindows[therapist][date] || Object.entries(dateWindows[therapist][date]).length == 0) {
-                                delete dateWindows[therapist][date];
-                            }
-                            if  (!dateWindows[therapist] || Object.entries(dateWindows[therapist]).length == 0) {
-                                delete dateWindows[therapist];
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            throw e;
+    async getFreeTimes(therapist: Therapists, dateString: string): Promise<string[]> {
+        const dateTime = new Date(`${dateString.split(".").reverse().join("-")}T00:00:00.000`);
+        const dates = await entriesServices.findEntries(
+            {therapist: therapist, 
+            user: IsNull(), 
+            // @ts-expect-error
+            date: And(LessThan(new Date(dateTime.getTime()+86400000)), MoreThanOrEqual(dateTime))}, 
+            'asc');
+        if (!dates.length) return [];
+        let freeTimes = [];
+        for (const dateObj of dates) {
+            let freeTime = lib.timeStampToString(dateObj.date).split(" ")[1];
+            freeTimes.push(freeTime);
         }
-    },
-    getFreeTimes(therapistTelegram: string, date: string): string[] {
-        if(!dateWindows[therapistTelegram]) return [];
-        const times = Object.keys(dateWindows[therapistTelegram][date]);
-        const freeTimes = times.filter(time => {
-            return dateWindows[therapistTelegram][date][time] == null;
-        });
         return freeTimes;
     },
     numToWeekday(num: number): string {
@@ -212,21 +223,10 @@ export const lib = {
         }
         return weekdays[num];
     },
-    dateAndTimeToDay(date: string, time: string): Date {
-        let result = new Date(`${date}T${time}:00.000Z`);
+    dateAndTimeToDate(date: string, time: string): Date {
+        const formattedDate = date.split(".").reverse().join("-");
+        let result = new Date(`${formattedDate}T${time}:00.000`);
         return result
-    },
-    sortDateWindows() {
-        for (let therapist in dateWindows) {
-            let datesEntries = Object.entries(dateWindows[therapist]);
-
-            datesEntries.sort((a, b) => {
-                const dateA = new Date(a[0]);
-                const dateB = new Date(b[0]);
-                return dateA.getTime() - dateB.getTime();
-            });
-            dateWindows[therapist] = Object.fromEntries(datesEntries);
-        }
     },
     async isTherapist(message: Message): Promise<boolean> {
         const telegram = message.from.username;
@@ -237,9 +237,11 @@ export const lib = {
      * Запускает рутиннную функцию напоминаний и удаления неактуальных записей, выполняется каждые 10 минут
      */
     async routine() {
-        const interval = 600_000; // миллисекунды
+        const interval = 600_000/20; // миллисекунды
         setInterval(
-            entriesHandlers.remindAndRemovePast,
+            () => {
+                entriesHandlers.remindAndDelete()
+            },
             interval
         )
     }

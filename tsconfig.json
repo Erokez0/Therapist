@@ -1,7 +1,7 @@
 {
     "include": ["./src", "node_modules"],
     "compilerOptions": {
-      "module": "commonjs",
+      "module": "ES6",
       "target": "ES6",
       "noImplicitAny": true,
       "removeComments": true,

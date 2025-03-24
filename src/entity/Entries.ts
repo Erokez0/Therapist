@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Users } from './Users';
 import { Therapists } from './Therapists';
 @Entity()
@@ -7,16 +7,17 @@ export class Entries {
     id: number;
 
     @ManyToOne(() => Therapists)
-    @Column({type: "text"})
+    @JoinColumn()
     therapist: Therapists
 
-    @Column({type: "timestamp"})
+    @Column({type: "timestamp without time zone"})
     date: Date 
 
-    @OneToOne(() => Users)
+    @OneToOne(() => Users, {nullable: true})
     @JoinColumn()
     user: Users
 
     @Column({type: "boolean", default: false})
     isReminded: boolean
+
 }

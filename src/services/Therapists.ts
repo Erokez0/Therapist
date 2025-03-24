@@ -14,6 +14,14 @@ export const therapistsServices = {
             throw e;
         }
     },
+    async getTherapistsTelegrams () {
+        try {
+            const therapists = await therapistsRepository.find({where: {}, select: ["telegram"]});
+            return therapists.map(therapist => therapist.telegram);
+        } catch (e) {
+            throw e;
+        }
+    },
     async createTherapist(therapist: therapistData): Promise<void> {
         try {
             const newTherapist = therapistsRepository.create({
@@ -33,6 +41,13 @@ export const therapistsServices = {
             return therapist;
         } catch (e) {
             throw e;
+        }
+    },
+    async findTherapist(therapistData: therapistFindData): Promise<Therapists> {
+        try {
+            return await therapistsRepository.findOneByOrFail(therapistData);
+        } catch (e) {
+            return null;
         }
     },
     async updateTherapist(therapistData: therapistFindData, therapistUpdate: therapistUpdateData): Promise<void> {
@@ -60,19 +75,11 @@ export const therapistsServices = {
             throw e;
         }
     },
-    
-    async getTherapistsTelegrams(): Promise<string[]> {
-        try {
-            return (await therapistsServices.getTherapists()).map(therapist => therapist.telegram);
-        } catch (e) {
-            throw e;
-        }
-    },
     async getTherapistByTelegram(telegram: string): Promise<Therapists> {
         try {
-            return await therapistsRepository.findOneBy({telegram: telegram});
+            return await therapistsRepository.findOneByOrFail({telegram: telegram});
         } catch (e) {
-            throw e;
+            return null
         }
     }
 }

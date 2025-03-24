@@ -1,22 +1,13 @@
 import { Message, User } from "node-telegram-bot-api";
-import dotenv from 'dotenv';
 import { bot } from "../index"
-import { userServices } from "../services/Users"
 import { lib } from "lib/lib";
-import { Users } from "entity/Users";
-import {
-    entryData,
-    Group, 
-    Stage, 
-    therapistData, 
-    userData 
-} from "../types/types"
+import { therapistData, } from "../types/types"
 import { therapistsServices } from "services/Therapists";
 import { messages } from "lib/messages";
 
 export async function defaultTherapists(): Promise<void> {
     try {
-        if((await therapistsServices.getTherapists()).length) return;
+        if ((await therapistsServices.getTherapists()).length) return;
         await therapistsServices.createTherapist({
             name: "Алексей",
             description: messages.AlekseyDescription,
@@ -48,7 +39,7 @@ export const therapistsHandlers = {
     async createTherapist(message: Message) {
         try {
             if(!lib.isAdmin(message)) return;
-            let therapistParamsArr = message.caption.split(" ").splice(1);
+            let therapistParamsArr = message.caption.split(/\s/g).splice(1);
             const [name, telegram, chatId ] = [therapistParamsArr[0], therapistParamsArr[1], +therapistParamsArr[2]];
             const description  = therapistParamsArr.splice(3).join(" ")
             const therapist: therapistData = {
@@ -69,7 +60,7 @@ export const therapistsHandlers = {
     async deleteTherapist(message: Message) {
         try {
             if(!lib.isAdmin(message)) return;
-            let id = +message.text.split(" ").splice(1)[0];
+            let id = +message.text.split(/\s/g).splice(1)[0];
             if(isNaN(id)) throw new Error('Некорректный id');
             await therapistsServices.deleteTherapist({id: id});
             bot.sendMessage(message.chat.id, "Психолог удалён успешно");

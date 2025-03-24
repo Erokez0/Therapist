@@ -8,7 +8,7 @@ export const userServices = {
     async createUser(user: userData): Promise<void> {
         try {
             const sameUser = await userRepository.findOneBy({
-                telegram: user.telegram})
+                chatId: user.chatId})
             if(sameUser) return;
             const newUser = userRepository.create({
                 name: user.name,
@@ -47,6 +47,13 @@ export const userServices = {
             return foundUsers;
         } catch (e) {
             throw e;
+        }
+    },
+    async findUser(findData: userFindData): Promise<Users|null> {
+        try {
+            return await userRepository.findOneByOrFail(findData);
+        } catch {
+            return null;
         }
     },
 

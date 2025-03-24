@@ -1,6 +1,7 @@
+import { Entries } from "entity/Entries";
 import { Therapists } from "entity/Therapists";
 import { Users } from "entity/Users";
-
+import { IsNull } from "typeorm";
 export type Group = string | number;
 
 export enum Stage {
@@ -19,47 +20,21 @@ export enum Stage {
     confirmDateAndTime = "confirmDateAndTime"
 
 }
-export type userData = {
-    name: string,
-    group: Group,
-    telegram: string,
-    chatId: number
-}
-export type userFindData = {
-    id?: number,
-    name?: string,
-    group?: Group,
-    telegram?: string,
-    chatId?: number
-}
+export type userData = Omit<Users, "id">
+export type userFindData = Partial<Users>
 export type userUpdateData = Omit<userFindData, "id">
 
-export type entryData = {
-    therapist: Therapists,
-    date: Date,
-    user: Users
-    isReminded: boolean
-}
+export type entryData = Omit<Entries, "id">
 
 export type entryFindData = {
     id?: number,
-    date?: Date,
-    user?: Users,
     therapist?: Therapists,
+    user?: Users | null | ReturnType<typeof IsNull>,
+    date?: Date,
     isReminded?: boolean
 }
-export type entryUpdateData = Omit<entryFindData, "id">
+export type entryUpdateData = Omit<Partial<Entries>, "id">
 
-export type therapistData = {
-    name: string,
-    description: string,
-    telegram: string,
-    chatId: number
-}
-export type therapistFindData = {
-    id?: number,
-    name?: string,
-    telegram?: string,
-    chatId?: number
-}
+export type therapistData = Omit<Therapists, "id">
+export type therapistFindData = Partial<Therapists>
 export type therapistUpdateData = Omit<therapistFindData, "id">

@@ -11,7 +11,7 @@ export class Users {
     @Column({type: "text"})
     group: Group;
 
-    @Column({type: "text"})
+    @Column({type: "text", nullable: true})
     telegram: string;
 
     @Column({type: "text"})
