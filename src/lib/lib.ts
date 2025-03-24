@@ -8,11 +8,8 @@ import path from "path";
 import { createWriteStream } from "fs";
 import { therapistsServices } from "services/Therapists";
 import { entriesHandlers } from "handlers/entries";
-import { bot } from "index";
 import { And, IsNull, LessThan, Like, MoreThan, MoreThanOrEqual } from "typeorm";
 import { adminsServices } from "services/Admins";
-
-const adminsTelegrams = process.env.adminsTelegrams.split(" ");
 export const lib = {
     usersToString(users: Users[]): string {
         if(!users.length) return "Нет пользователей";
