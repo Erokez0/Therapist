@@ -10,6 +10,7 @@ import { therapistsServices } from "services/Therapists";
 import { entriesHandlers } from "handlers/entries";
 import { bot } from "index";
 import { And, IsNull, LessThan, Like, MoreThan, MoreThanOrEqual } from "typeorm";
+import { adminsServices } from "services/Admins";
 
 const adminsTelegrams = process.env.adminsTelegrams.split(" ");
 export const lib = {
@@ -42,7 +43,7 @@ export const lib = {
         return result;
     },
     isAdmin(message: Message): Boolean {
-        return adminsTelegrams.includes(message.chat.username);
+        return !!adminsServices.findAdmin(message.chat.id);
     },
     isValidDateString(dateString: string): boolean {
         const matchResult = dateString.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/gi);
@@ -229,9 +230,7 @@ export const lib = {
         return result
     },
     async isTherapist(message: Message): Promise<boolean> {
-        const telegram = message.from.username;
-        const therapistTelegrams = await therapistsServices.getTherapistsTelegrams();
-        return therapistTelegrams.includes(telegram);
+        return !!therapistsServices.findTherapist({chatId: message.chat.id});
     },
     /**
      * Запускает рутиннную функцию напоминаний и удаления неактуальных записей, выполняется каждые 10 минут

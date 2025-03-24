@@ -7,6 +7,7 @@ import { messageHandlers } from "handlers/messages"
 import { entriesHandlers } from "handlers/entries";
 import { therapistsHandlers, defaultTherapists } from "handlers/therapists";
 import { lib } from "lib/lib";
+import { adminsHandlers, createDefaultAdmins } from "handlers/admins";
 dotenv.config();
 
 
@@ -22,7 +23,15 @@ myDataSource
         defaultTherapists()
         .then(() => {
             console.log("Therapists have been initialized!")
-        }).catch((err) => {
+        }).then(() => {
+            createDefaultAdmins()
+            .then(() => {
+                console.log("Admins have been initialized!")
+            }).catch((err) => {
+                console.error("Error during admins initialization:", err)
+            })
+        })
+        .catch((err) => {
             console.error("Error during therapists initialization:", err)
         })
     })
@@ -49,68 +58,73 @@ export let userStates: Record<any, Record<any,  any>> = {};
 
 //  ПСИХОЛОГИ
 bot.onText(/^\/getTherapists$/g, async msg => {
-    therapistsHandlers.getTherapists(msg);
+    await therapistsHandlers.getTherapists(msg);
 })
 bot.onText(/^\/deleteTherapist\s.+$/g, async msg => {
-    therapistsHandlers.deleteTherapist(msg);
+    await therapistsHandlers.deleteTherapist(msg);
 })
 //  ОКНА ЗАПИСИ
-bot.onText(/^(\/createWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2}){1,})$/g, 
-    async msg => {
-    entriesHandlers.createWindows(msg);
+bot.onText(/^(\/createWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2}){1,})$/g, async msg => {
+    await entriesHandlers.createWindows(msg);
 })
-bot.onText(/^\/deleteWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2})*$/g, 
-    async msg => {
-    entriesHandlers.deleteMyWindows(msg);
+bot.onText(/^\/deleteWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2})*$/g, async msg => {
+    await entriesHandlers.deleteMyWindows(msg);
 })
 bot.onText(/^\/getWindows$/g, async msg => {
-    entriesHandlers.getWindows(msg);
+    await entriesHandlers.getWindows(msg);
 })
 bot.onText(/^\/getMyWindows$/g, async msg => {
-    entriesHandlers.getMyWindows(msg);
+    await entriesHandlers.getMyWindows(msg);
 })
 // ПОЛЬЗОВАТЕЛИ
 bot.onText(/^\/getMe$/g, async msg => {
-    usersHandlers.getMe(msg);
+    await usersHandlers.getMe(msg);
 });
 bot.onText(/^\/createUser\s.+\s.+\s.+$/g, async msg => {
-    usersHandlers.createUser(msg)
+    await usersHandlers.createUser(msg)
 });
 bot.onText(/^\/getUsers$/g, async msg => {
-    usersHandlers.getAllUsers(msg);
+    await usersHandlers.getAllUsers(msg);
 });
 bot.onText(/^\/deleteUser\s\d+$/g, async msg => {
-    usersHandlers.deleteUser(msg);
+    await usersHandlers.deleteUser(msg);
 });
 // START
 bot.onText(/^\/start$/g, async msg => {
-    messageHandlers.greeting(msg);
+    await messageHandlers.greeting(msg);
 });
 // ЗАПИСИ
 bot.onText(/^\/getEntries$/, async msg => {
-    entriesHandlers.getEntries(msg);
+    await entriesHandlers.getEntries(msg);
 })
 bot.onText(/^\/deleteEntry(\s\d+)+$/g, async msg => {
-    entriesHandlers.deleteEntryById(msg);
+    await entriesHandlers.deleteEntryById(msg);
 })
 bot.onText(/^\/help$/, async msg => {
-    messageHandlers.help(msg);
+    await messageHandlers.help(msg);
+})
+// АДМИНЫ
+bot.onText(/^\/createAdmin\s\d+$/g, async msg => {
+    await adminsHandlers.createAdmin(msg);
+})
+bot.onText(/^\/deleteAdmin\s\d+$/g, async msg => {
+    await adminsHandlers.deleteAdmin(msg);
 })
 // ТЕКСТ
 bot.onText(/^Назад$/g, async msg => {
-    messageHandlers.signup(msg)
+    await messageHandlers.signup(msg)
 })
 bot.onText(/^Записаться$/g, async msg => {
-    messageHandlers.signup(msg);
+    await messageHandlers.signup(msg);
 });
 bot.onText(/^(Отмена)|(\/cancel)$/i, async msg => {
-    messageHandlers.cancel(msg);
+    await messageHandlers.cancel(msg);
 });
 bot.onText(/^Со мной не связались$/i, async msg => {
-    messageHandlers.noContact(msg);
+    await messageHandlers.noContact(msg);
 })
 bot.on("text", async msg => {
-    messageHandlers.onText(msg);
+    await messageHandlers.onText(msg);
 })
 bot.on("message",() => console.log(userStates)
 )
@@ -118,7 +132,7 @@ bot.on("message",() => console.log(userStates)
 bot.on('photo', async msg => {
     if(msg.photo && msg.caption) {
         if(msg.caption.startsWith("/createTherapist")) {
-            therapistsHandlers.createTherapist(msg);
+            await therapistsHandlers.createTherapist(msg);
         }
     }
 })
@@ -126,7 +140,4 @@ bot.on('photo', async msg => {
 bot.on('polling_error', (error) => {
     console.error(`Telegram Bot polling error!\n${error.message}`);
     bot.stopPolling();
-});
-bot.on('webhook_error', (error) => {
-    console.error(`Telegram Bot webhook error!\n${error.message}`);
 });

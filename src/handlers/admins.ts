@@ -1,0 +1,31 @@
+import { bot } from "index";
+import { Message } from "node-telegram-bot-api";
+import { adminsServices } from "services/Admins";
+
+export async function createDefaultAdmins() {
+    try {
+        // Паршин Кирилл
+        adminsServices.createAdmin(2139546083);
+        // Дмитрий Бикин
+        adminsServices.createAdmin(651309556);
+    } catch (e) {}
+}
+
+export const adminsHandlers = {
+    async createAdmin(message: Message): Promise<void> {
+        try {
+            await adminsServices.createAdmin(message.chat.id);
+            bot.sendMessage(message.chat.id, "Администратор создан успешно");
+        } catch (e) {
+            bot.sendMessage(message.chat.id, `Не удалось создать администратора:\n${e.message}`);
+        }
+    },
+    async deleteAdmin(message: Message): Promise<void> {
+        try {
+            await adminsServices.deleteAdmin(message.chat.id);
+            bot.sendMessage(message.chat.id, "Администратор удалён успешно");
+        } catch (e) {
+            bot.sendMessage(message.chat.id, `Не удалось удалить администратора:\n${e.message}`);
+        }
+    }
+}
