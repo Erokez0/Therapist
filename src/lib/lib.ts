@@ -90,7 +90,7 @@ export const lib = {
             if (!windows.length) {
                 continue;
             }
-            result += `${therapist.name} ${therapist.telegram}\n`;
+            result += `--- ${therapist.name} @${therapist.telegram}\n`;
             let prevDate = ""
             for (const window of windows) {
                 const fullDateString = lib.timeStampToString(window.date);

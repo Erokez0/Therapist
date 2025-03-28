@@ -6,10 +6,12 @@ import { adminsServices } from "services/Admins";
 export async function createDefaultAdmins() {
     try {
         // Паршин Кирилл
-        adminsServices.createAdmin(2139546083);
+        await adminsServices.createAdmin(2139546083);
         // Дмитрий Бикин
-        adminsServices.createAdmin(651309556);
-    } catch (e) {}
+        await adminsServices.createAdmin(651309556);
+    } catch (e) {
+        throw e;
+    }
 }
 
 export const adminsHandlers = {

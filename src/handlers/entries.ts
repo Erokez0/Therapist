@@ -178,7 +178,7 @@ export const entriesHandlers = {
             const entry = (await entriesServices.findEntries({date: LessThan(new Date(now.getTime()+day))}, "asc", 1, ix))[0];
 
             if (!entry) return;
-            if (!entry.user && entry.date <= now) {
+            if (entry.date <= now) {
                 entriesServices.deleteEntry({ id: entry.id });
                 continue;
             }
@@ -186,17 +186,10 @@ export const entriesHandlers = {
                 const user = entry.user;
                 const chatId = user.chatId;
                 const dayOfWeek = lib.numToWeekday(entry.date.getDay());
-                const date = entry.date.getDate() + "." + 
-                    entry.date.getMonth() + "." + 
-                    entry.date.getFullYear();
-
-                const time = String(entry.date.getHours())
-                    .padStart(2, "0") + ":" + 
-                    String(entry.date.getMinutes())
-                    .padStart(2, "0");
+                const stringDate = lib.timeStampToString(entry.date);
 
                 const therapistName = entry.therapist.name;
-                const messageText = `Напоминаем о вашей записи!\n${dayOfWeek} ${date} в ${time} к психологу ${therapistName}.\nОстался один день!`;
+                const messageText = `Напоминаем о вашей записи!\n${dayOfWeek} ${stringDate.split(" ").join(" в ")} к психологу ${therapistName}.\nОстался один день!`;
                 await bot.sendMessage(chatId, messageText);
                 await entriesServices.updateEntry(
                     {id: entry.id}, 

@@ -11,6 +11,8 @@ import { Therapists } from "entity/Therapists";
 import { therapistsServices } from "services/Therapists";
 import { userServices } from "services/Users";
 import { entriesServices } from "services/Entries";
+import { parse } from "path";
+import { therapistsHandlers } from "./therapists";
 
 dotenv.config()
 
@@ -50,7 +52,6 @@ export const messageHandlers = {
      */
     async signup(message: Message): Promise<void> {
         const user = await userServices.findUser({chatId: message.chat.id});
-        console.log(user)
         let currentState;
         if (userStates[message.chat.id]) {
             currentState = userStates[message.chat.id]["current"];
@@ -129,7 +130,6 @@ export const messageHandlers = {
                 ],
             }
         };
-        console.log(user)
         bot.sendMessage(message.chat.id, messages.TherapistChoice, options)
     },
 
@@ -142,25 +142,29 @@ export const messageHandlers = {
                   [{text: 'Далее'},{text: 'Назад'}],
                 ],
             }
-        };
-        const therapist: Therapists = (await therapistsServices.findTherapists({name: therapistName}))[0];
+        }
+        const therapist: Therapists = await therapistsServices.findTherapist({name: therapistName});
         if(!therapist) {
             bot.sendMessage(message.chat.id, "Психолог не найден по имени: " + therapistName);
             return;
         }
-        const therapistPhotoExists = await lib.therapistPhotoExists(therapist.telegram);
-        if(therapistPhotoExists) {
-           await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`);
-        } else {
-            await bot.sendMessage(message.chat.id, "У психолога нет фотографии");
-        }
-
-        const therapistDescription: string = therapist.description || "Нет описания психолога"
+        const therapistPhotoExists = await lib.therapistPhotoExists(therapist.telegram);  
+        const therapistDescription: string =  therapist.description || "Нет описания психолога"
         userStates[message.chat.id] = {
             "chosenTherapist": therapist.chatId,
             "current": Stage.dateChoice
         };
-        bot.sendMessage(message.chat.id, therapistDescription, options);
+        if (therapistDescription.length > 1024) {
+            if(therapistPhotoExists) await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`);
+            await bot.sendMessage(message.chat.id, therapistDescription, options);
+        } else {
+            if(therapistPhotoExists) {
+                await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`, {caption: therapistDescription, ...options});
+            } else {
+                await bot.sendMessage(message.chat.id, therapistDescription, options);
+            }
+        }
+        
     },
     async dateChoice(message: Message): Promise<void> {
         const keyboard: any[][] = [];
@@ -270,11 +274,9 @@ export const messageHandlers = {
             const chatId = message.chat.id;
             const date = lib.dateAndTimeToDate(userStates[chatId]["chosenDate"], 
                 userStates[chatId]["chosenTime"]);
-            console.log(date)
             const therapistChatId = userStates[chatId]["chosenTherapist"];
             const therapist = await therapistsServices.findTherapist({chatId: therapistChatId});
             const user = await userServices.findUser({chatId: chatId});
-            console.log(user)
             await entriesServices.updateEntry({
                 therapist: therapist,
                 isReminded: false,
@@ -305,7 +307,6 @@ export const messageHandlers = {
             } else {
                 messageText =`К вам записался ${user.name} ${user.group} на ${weekday} ${prettyDate} в ${time}!`;
             }
-            console.log(therapist)
             bot.sendMessage(therapist.chatId, messageText, {parse_mode: 'Markdown', disable_web_page_preview: true});
             userStates[chatId] = {
                 'current': 'start'
@@ -407,6 +408,14 @@ export const messageHandlers = {
         if (!isAdmin && !isTherapist) {
             bot.sendMessage(message.chat.id, messages.helpStudent);
         }
-    }
+    },
 
+    async onPhoto(message: Message): Promise<void> {
+        if(message.photo 
+            && message.caption 
+            && message.caption.startsWith("/createTherapist")) 
+            {
+            await therapistsHandlers.createTherapist(message);
+        }
+    }
 }

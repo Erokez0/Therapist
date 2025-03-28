@@ -11,131 +11,81 @@ import { adminsHandlers, createDefaultAdmins } from "handlers/admins";
 dotenv.config();
 
 
-const TOKEN = process.env.api_token;
-export const bot = new TelegramBot(TOKEN, {
-    polling: true
-});
+const TOKEN = process.env.api_token;export const bot = new TelegramBot(TOKEN);
+bot.startPolling().then(() => {
+    console.log("Bot started!");
+}).catch((err) => {
+    console.error("Error during bot initialization:", err)
+})
 
 myDataSource
     .initialize()
     .then(() => {
         console.log("Data Source has been initialized!");
         defaultTherapists()
-        .then(() => {
-            console.log("Therapists have been initialized!")
-        }).then(() => {
-            createDefaultAdmins()
             .then(() => {
-                console.log("Admins have been initialized!")
+                console.log("Therapists have been initialized!")
+            }).then(() => {
+                createDefaultAdmins()
+                    .then(() => {
+                        console.log("Admins have been initialized!")
+                    }).catch((err) => {
+                        console.error("Error during admins initialization:", err)
+                        bot.stopPolling();
+                    })
             }).catch((err) => {
-                console.error("Error during admins initialization:", err)
+                console.error("Error during therapists initialization:", err)
+                bot.stopPolling();
             })
-        })
-        .catch((err) => {
-            console.error("Error during therapists initialization:", err)
-        })
-    })
-    .catch((err) => {
+    }).catch((err) => {
         console.error("Error during Data Source initialization:", err)
+        bot.stopPolling();
     })
 
 lib.routine();
 
 export let userStates: Record<any, Record<any,  any>> = {};
-/*
-{
-'2342': {
-        chosenTherapist: @ErokezErokez,
-        chosenDate: 22.02.2025,
-        chosenTime: 14:00,
-        fullName: 'Паршин Кирилл Александрович',
-        group: 'ИТ11.24.1'
-    }
-}
-*/
 
 // КОМАНДЫ
 
 //  ПСИХОЛОГИ
-bot.onText(/^\/getTherapists$/g, async msg => {
-    await therapistsHandlers.getTherapists(msg);
-})
-bot.onText(/^\/deleteTherapist\s.+$/g, async msg => {
-    await therapistsHandlers.deleteTherapist(msg);
-})
+bot.onText(/^\/getTherapists$/g, therapistsHandlers.getTherapists);
+bot.onText(/^\/deleteTherapist\s.+$/g, therapistsHandlers.deleteTherapist);
 //  ОКНА ЗАПИСИ
-bot.onText(/^(\/createWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2}){1,})$/g, async msg => {
-    await entriesHandlers.createWindows(msg);
-})
-bot.onText(/^\/deleteWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2})*$/g, async msg => {
-    await entriesHandlers.deleteMyWindows(msg);
-})
-bot.onText(/^\/getWindows$/g, async msg => {
-    await entriesHandlers.getWindows(msg);
-})
-bot.onText(/^\/getMyWindows$/g, async msg => {
-    await entriesHandlers.getMyWindows(msg);
-})
+bot.onText(
+    /^(\/createWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2}){1,})$/g, 
+    entriesHandlers.createWindows);
+bot.onText(
+    /^\/deleteWindows\s((\d{4}\D\d{2}\D\d{2})|(\d{2}\D\d{2}\D\d{4}))(\s\d{2}:\d{2})*$/g, 
+    entriesHandlers.deleteMyWindows);
+bot.onText(/^\/getWindows$/g, entriesHandlers.getWindows);
+bot.onText(/^\/getMyWindows$/g, entriesHandlers.getMyWindows);
 // ПОЛЬЗОВАТЕЛИ
-bot.onText(/^\/getMe$/g, async msg => {
-    await usersHandlers.getMe(msg);
-});
-bot.onText(/^\/createUser\s.+\s.+\s.+$/g, async msg => {
-    await usersHandlers.createUser(msg)
-});
-bot.onText(/^\/getUsers$/g, async msg => {
-    await usersHandlers.getAllUsers(msg);
-});
-bot.onText(/^\/deleteUser\s\d+$/g, async msg => {
-    await usersHandlers.deleteUser(msg);
-});
+bot.onText(/^\/getMe$/g, usersHandlers.getMe);
+bot.onText(/^\/createUser\s.+\s.+\s.+$/g, usersHandlers.createUser);
+bot.onText(/^\/getUsers$/g, usersHandlers.getAllUsers);
+bot.onText(/^\/deleteUser\s\d+$/g, usersHandlers.deleteUser);
 // START
-bot.onText(/^\/start$/g, async msg => {
-    await messageHandlers.greeting(msg);
-});
+bot.onText(/^\/start$/g, messageHandlers.greeting);
 // ЗАПИСИ
-bot.onText(/^\/getEntries$/, async msg => {
-    await entriesHandlers.getEntries(msg);
-})
-bot.onText(/^\/deleteEntry(\s\d+)+$/g, async msg => {
-    await entriesHandlers.deleteEntryById(msg);
-})
+bot.onText(/^\/getEntries$/, entriesHandlers.getEntries);
+bot.onText(/^\/deleteEntry(\s\d+)+$/g, entriesHandlers.deleteEntryById);
 bot.onText(/^\/help$/, async msg => {
     await messageHandlers.help(msg);
 })
 // АДМИНЫ
-bot.onText(/^\/createAdmin\s\d+$/g, async msg => {
-    await adminsHandlers.createAdmin(msg);
-})
-bot.onText(/^\/deleteAdmin\s\d+$/g, async msg => {
-    await adminsHandlers.deleteAdmin(msg);
-})
+bot.onText(/^\/createAdmin\s\d+$/g, adminsHandlers.createAdmin);
+bot.onText(/^\/deleteAdmin\s\d+$/g, adminsHandlers.deleteAdmin);
 // ТЕКСТ
-bot.onText(/^Назад$/g, async msg => {
-    await messageHandlers.signup(msg)
-})
+bot.onText(/^Назад$/g, messageHandlers.signup);
 bot.onText(/^Записаться$/g, async msg => {
     await messageHandlers.signup(msg);
 });
-bot.onText(/^(Отмена)|(\/cancel)$/i, async msg => {
-    await messageHandlers.cancel(msg);
-});
-bot.onText(/^Со мной не связались$/i, async msg => {
-    await messageHandlers.noContact(msg);
-})
-bot.on("text", async msg => {
-    await messageHandlers.onText(msg);
-})
-bot.on("message",() => console.log(userStates)
-)
+bot.onText(/^(Отмена)|(\/cancel)$/i, messageHandlers.cancel);
+bot.onText(/^Со мной не связались$/i, messageHandlers.noContact);
+bot.on("text", messageHandlers.onText);
 // ФОТО - добавление психолога
-bot.on('photo', async msg => {
-    if(msg.photo && msg.caption) {
-        if(msg.caption.startsWith("/createTherapist")) {
-            await therapistsHandlers.createTherapist(msg);
-        }
-    }
-})
+bot.on('photo', messageHandlers.onPhoto)
 // ОШИБКИ
 bot.on('polling_error', (error) => {
     console.error(`Telegram Bot polling error!\n${error.message}`);
