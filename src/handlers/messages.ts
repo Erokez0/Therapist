@@ -5,7 +5,7 @@ import { lib } from "lib/lib";
 import { messages } from "lib/messages";
 import {
     entryData,
-    Stage, 
+    Stage,
 } from "../types/types"
 import { Therapists } from "entity/Therapists";
 import { therapistsServices } from "services/Therapists";
@@ -23,11 +23,13 @@ export const messageHandlers = {
      * Отменяет действие пользователя, возвращая его на start
      * @param message Сообщение Telegram
      */
-    async cancel (message: Message): Promise<void> {
-        userStates[message.chat.id] = {"current": Stage.start};
-        bot.sendMessage(message.chat.id, messages.cancel, 
-            {reply_markup: 
-                {remove_keyboard: true}});
+    async cancel(message: Message): Promise<void> {
+        userStates[message.chat.id] = { "current": Stage.start };
+        bot.sendMessage(message.chat.id, messages.cancel,
+            {
+                reply_markup:
+                    { remove_keyboard: true }
+            });
     },
     /**
      * Приветственное сообщение пользователю
@@ -39,11 +41,11 @@ export const messageHandlers = {
                 resize_keyboard: true,
                 one_time_keyboard: true,
                 keyboard: [
-                  [{text: 'Записаться'}],
+                    [{ text: 'Записаться' }],
                 ],
             }
         };
-        userStates[message.chat.id] = Object.assign(userStates[message.chat.id] || {}, {["current"]: Stage.start});
+        userStates[message.chat.id] = Object.assign(userStates[message.chat.id] || {}, { ["current"]: Stage.start });
         bot.sendMessage(message.chat.id, messages.greeting, options);
     },
     /**
@@ -51,28 +53,28 @@ export const messageHandlers = {
      * @param message Сообщение Telegram
      */
     async signup(message: Message): Promise<void> {
-        const user = await userServices.findUser({chatId: message.chat.id});
+        const user = await userServices.findUser({ chatId: message.chat.id });
         let currentState;
         if (userStates[message.chat.id]) {
             currentState = userStates[message.chat.id]["current"];
         } else {
             currentState = 'start'
         }
-        const entry = (await entriesServices.findEntries({user: user}))[0];
+        const entry = (await entriesServices.findEntries({ user: user }))[0];
 
         if (user && entry) {
             bot.sendMessage(message.chat.id, messages.alreadyRegistered);
             return;
         }
-        if(!user && currentState === Stage.start) {
-            await bot.sendMessage(message.chat.id, messages.rules, {parse_mode: "Markdown"});
+        if (!user && currentState === Stage.start) {
+            await bot.sendMessage(message.chat.id, messages.rules, { parse_mode: "Markdown" });
             bot.sendMessage(message.chat.id, messages.notRegisteredName,
                 {
                     reply_markup: {
                         resize_keyboard: true,
                         one_time_keyboard: true,
                         keyboard: [
-                            [{text: "Отмена"}],
+                            [{ text: "Отмена" }],
                         ],
                     }
                 }
@@ -80,14 +82,14 @@ export const messageHandlers = {
             userStates[message.chat.id]["current"] = Stage.giveName;
             return;
 
-        } else if(!user && currentState === Stage.giveName) {
+        } else if (!user && currentState === Stage.giveName) {
             bot.sendMessage(message.chat.id, messages.notRegisteredGroup,
                 {
                     reply_markup: {
                         resize_keyboard: true,
                         one_time_keyboard: true,
                         keyboard: [
-                            [{text: "Отмена"}],
+                            [{ text: "Отмена" }],
                         ],
                     }
                 }
@@ -95,7 +97,7 @@ export const messageHandlers = {
             userStates[message.chat.id]["current"] = Stage.giveGroup;
             return;
 
-        } else if(!user) {
+        } else if (!user) {
             await userServices.createUser({
                 name: userStates[message.chat.id][Stage.giveName],
                 group: userStates[message.chat.id][Stage.giveGroup],
@@ -111,22 +113,22 @@ export const messageHandlers = {
         let keyboard: any[] = []
 
         therapistsNames.forEach((name) => {
-            keyboard.push({text: name})
+            keyboard.push({ text: name })
         })
 
         if (!keyboard.length) {
             bot.sendMessage(message.chat.id, "Нет психологов");
             userStates[message.chat.id]["current"] = Stage.start;
             return;
-        } 
+        }
 
         const options = {
             reply_markup: {
                 resize_keyboard: true,
                 one_time_keyboard: true,
                 keyboard: [
-                  keyboard,
-                  [{text: "Отмена"}]
+                    keyboard,
+                    [{ text: "Отмена" }]
                 ],
             }
         };
@@ -139,32 +141,32 @@ export const messageHandlers = {
                 resize_keyboard: true,
                 one_time_keyboard: true,
                 keyboard: [
-                  [{text: 'Далее'},{text: 'Назад'}],
+                    [{ text: 'Далее' }, { text: 'Назад' }],
                 ],
             }
         }
-        const therapist: Therapists = await therapistsServices.findTherapist({name: therapistName});
-        if(!therapist) {
+        const therapist: Therapists = await therapistsServices.findTherapist({ name: therapistName });
+        if (!therapist) {
             bot.sendMessage(message.chat.id, "Психолог не найден по имени: " + therapistName);
             return;
         }
-        const therapistPhotoExists = await lib.therapistPhotoExists(therapist.telegram);  
-        const therapistDescription: string =  therapist.description || "Нет описания психолога"
+        const therapistPhotoExists = await lib.therapistPhotoExists(therapist.telegram);
+        const therapistDescription: string = therapist.description || "Нет описания психолога"
         userStates[message.chat.id] = {
             "chosenTherapist": therapist.chatId,
             "current": Stage.dateChoice
         };
         if (therapistDescription.length > 1024) {
-            if(therapistPhotoExists) await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`);
+            if (therapistPhotoExists) await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`);
             await bot.sendMessage(message.chat.id, therapistDescription, options);
         } else {
-            if(therapistPhotoExists) {
-                await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`, {caption: therapistDescription, ...options});
+            if (therapistPhotoExists) {
+                await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`, { caption: therapistDescription, ...options });
             } else {
                 await bot.sendMessage(message.chat.id, therapistDescription, options);
             }
         }
-        
+
     },
     async dateChoice(message: Message): Promise<void> {
         const keyboard: any[][] = [];
@@ -181,19 +183,19 @@ export const messageHandlers = {
         let ix = 0;
         for (const date of freeDates) {
             if (countInBLock === 0) {
-                keyboard[ix] = [{text: date}];
+                keyboard[ix] = [{ text: date }];
                 countInBLock++;
             } else if (countInBLock >= 3) {
                 ix++;
                 countInBLock = 0;
-                keyboard[ix] = [{text: date}];
+                keyboard[ix] = [{ text: date }];
                 countInBLock++;
             } else {
-                keyboard[ix].push({text: date});
+                keyboard[ix].push({ text: date });
                 countInBLock++
             }
         }
-        keyboard.push([{text: 'Отмена'}]);
+        keyboard.push([{ text: 'Отмена' }]);
         const options = {
             reply_markup: {
                 resize_keyboard: true,
@@ -209,7 +211,7 @@ export const messageHandlers = {
         try {
             const keyboard: any[][] = [];
             const chosenTherapist = userStates[message.chat.id]["chosenTherapist"];
-            const therapist = await therapistsServices.findTherapist({chatId: chosenTherapist});
+            const therapist = await therapistsServices.findTherapist({ chatId: chosenTherapist });
             const chosenDate = userStates[message.chat.id]["chosenDate"];
 
             const freeTimes = await lib.getFreeTimes(therapist, chosenDate);
@@ -218,19 +220,19 @@ export const messageHandlers = {
             let ix = 0;
             for (const time of freeTimes) {
                 if (countInBLock === 0) {
-                    keyboard[ix] = [{text: time}];
+                    keyboard[ix] = [{ text: time }];
                     countInBLock++;
                 } else if (countInBLock >= 3) {
                     ix++;
                     countInBLock = 0;
-                    keyboard[ix] = [{text: time}];
+                    keyboard[ix] = [{ text: time }];
                     countInBLock++;
                 } else {
-                    keyboard[ix].push({text: time});
+                    keyboard[ix].push({ text: time });
                     countInBLock++
                 }
             }
-            keyboard.push([{text: 'Отмена'}]);
+            keyboard.push([{ text: 'Отмена' }]);
             const options = {
                 reply_markup: {
                     resize_keyboard: true,
@@ -250,7 +252,7 @@ export const messageHandlers = {
             reply_markup: {
                 resize_keyboard: true,
                 one_time_keyboard: true,
-                keyboard: [[{text: 'Да'},{text: 'Нет'}]],
+                keyboard: [[{ text: 'Да' }, { text: 'Нет' }]],
             }
         };
         const time = userStates[message.chat.id]["chosenTime"];
@@ -265,30 +267,30 @@ export const messageHandlers = {
         const weekday = lib.numToWeekday(day).toLowerCase();
 
         const chosenTherapistChatId = userStates[message.chat.id]["chosenTherapist"];
-        const therapist = await therapistsServices.findTherapist({chatId: chosenTherapistChatId});
+        const therapist = await therapistsServices.findTherapist({ chatId: chosenTherapistChatId });
         const messageText = `Вы хотите записаться на ${weekday} ${prettyDate} в ${time} психологу ${therapist.name}, всё верно?`;
         bot.sendMessage(message.chat.id, messageText, options);
     },
     async registerEntry(message: Message): Promise<void> {
         try {
             const chatId = message.chat.id;
-            const date = lib.dateAndTimeToDate(userStates[chatId]["chosenDate"], 
+            const date = lib.dateAndTimeToDate(userStates[chatId]["chosenDate"],
                 userStates[chatId]["chosenTime"]);
             const therapistChatId = userStates[chatId]["chosenTherapist"];
-            const therapist = await therapistsServices.findTherapist({chatId: therapistChatId});
-            const user = await userServices.findUser({chatId: chatId});
+            const therapist = await therapistsServices.findTherapist({ chatId: therapistChatId });
+            const user = await userServices.findUser({ chatId: chatId });
             await entriesServices.updateEntry({
                 therapist: therapist,
                 isReminded: false,
                 date: date
             },
-                {user: user}
+                { user: user }
             );
             bot.sendMessage(message.chat.id, messages.registeredSuccesfully, {
                 reply_markup: {
                     resize_keyboard: true,
                     one_time_keyboard: true,
-                    keyboard: [[{text: 'Со мной не связались'}]],
+                    keyboard: [[{ text: 'Со мной не связались' }]],
                 }
             });
 
@@ -298,16 +300,16 @@ export const messageHandlers = {
             let prettyDate: string[] | string = [];
             for (let piece of dateString.split("-")) prettyDate.unshift(piece);
             prettyDate = prettyDate.join(".");
-    
+
             const day = (new Date(date)).getDay();
             const weekday = lib.numToWeekday(day).toLowerCase();
             let messageText;
             if (user.telegram) {
                 messageText = `К вам записался [${user.name} ${user.group}](https://t.me/${user.telegram}) на ${weekday} ${prettyDate} в ${time}!`;
             } else {
-                messageText =`К вам записался ${user.name} ${user.group} на ${weekday} ${prettyDate} в ${time}!`;
+                messageText = `К вам записался ${user.name} ${user.group} на ${weekday} ${prettyDate} в ${time}!`;
             }
-            bot.sendMessage(therapist.chatId, messageText, {parse_mode: 'Markdown', disable_web_page_preview: true});
+            bot.sendMessage(therapist.chatId, messageText, { parse_mode: 'Markdown', disable_web_page_preview: true });
             userStates[chatId] = {
                 'current': 'start'
             }
@@ -317,12 +319,12 @@ export const messageHandlers = {
     },
 
     async onText(message: Message): Promise<void> {
-        const hasCurrentState = userStates[message.chat.id] 
-        && userStates[message.chat.id]["current"];
+        const hasCurrentState = userStates[message.chat.id]
+            && userStates[message.chat.id]["current"];
         const isCanceled = message.text === "Отмена";
-        if(hasCurrentState && !isCanceled){
+        if (hasCurrentState && !isCanceled) {
             const currentState = userStates[message.chat.id]["current"];
-            if(currentState == Stage.giveName){
+            if (currentState == Stage.giveName) {
                 userStates[message.chat.id][Stage.giveName] = message.text
                 messageHandlers.signup(message)
                 return
@@ -341,7 +343,7 @@ export const messageHandlers = {
 
                 if (!dates.includes(givenDate)) {
                     const transformedDate = givenDate.split(".").reverse().join(".");
-                    if(!dates.includes(transformedDate)) {
+                    if (!dates.includes(transformedDate)) {
                         bot.sendMessage(message.chat.id, messages.dateDoesntExist);
                         messageHandlers.dateChoice(message);
                         return
@@ -354,10 +356,10 @@ export const messageHandlers = {
             } else if (currentState === Stage.chosenDateAndTime) {
                 const chosenDate = userStates[message.chat.id]["chosenDate"];
                 const chosenTherapist = userStates[message.chat.id]["chosenTherapist"];
-                const therapist = await therapistsServices.findTherapist({chatId: chosenTherapist});
+                const therapist = await therapistsServices.findTherapist({ chatId: chosenTherapist });
                 const times = await lib.getFreeTimes(therapist, chosenDate);
                 const givenTime = message.text;
-            
+
                 if (!times.includes(givenTime)) {
                     bot.sendMessage(message.chat.id, messages.timeDoesntExist);
                     messageHandlers.timeChoice(message);
@@ -373,37 +375,41 @@ export const messageHandlers = {
                 } else if (message.text === "Нет") {
                     messageHandlers.dateChoice(message);
                 } else {
-                    const options = {reply_markup: 
-                        {resize_keyboard: true, one_time_keyboard: true, 
-                        keyboard: [[{text: "Да"}, {text: "Нет"}]]}}
+                    const options = {
+                        reply_markup:
+                        {
+                            resize_keyboard: true, one_time_keyboard: true,
+                            keyboard: [[{ text: "Да" }, { text: "Нет" }]]
+                        }
+                    }
                     bot.sendMessage(message.chat.id, "Нет такого варианта, выберите 'Да' или 'Нет", options);
                 }
             }
         }
         const therapistsNames = await therapistsServices.getTherapistsNames()
-        if(therapistsNames.includes(message.text)) {
+        if (therapistsNames.includes(message.text)) {
             messageHandlers.getTherapistDescription(message, message.text);
         }
     },
     async noContact(message: Message): Promise<void> {
-        const user = await userServices.findUser({chatId: message.chat.id});
+        const user = await userServices.findUser({ chatId: message.chat.id });
         if (!user) return;
-        const entry = await entriesServices.findOne({user: user});
+        const entry = await entriesServices.findOne({ user: user });
         if (!entry) return;
         const therapist = entry.therapist;
-        const userString = `${user.name} ${user.group}${user.telegram? " @" + user.telegram : ""}`;
+        const userString = `${user.name} ${user.group}${user.telegram ? " @" + user.telegram : ""}`;
         bot.sendMessage(therapist.chatId, `Похоже, что вы не связались с ${userString}!`);
         bot.sendMessage(message.chat.id, messages.noContact);
     },
 
     async help(message: Message): Promise<void> {
-        const isAdmin = lib.isAdmin(message);
+        const isAdmin = await lib.isAdmin(message);
         const isTherapist = await lib.isTherapist(message);
         if (isTherapist) {
-            bot.sendMessage(message.chat.id, messages.helpTherapist, {parse_mode: 'Markdown'});
+            bot.sendMessage(message.chat.id, messages.helpTherapist, { parse_mode: 'Markdown' });
         };
         if (isAdmin) {
-            bot.sendMessage(message.chat.id, messages.helpAdmin, {parse_mode: 'Markdown'});
+            bot.sendMessage(message.chat.id, messages.helpAdmin, { parse_mode: 'Markdown' });
         };
         if (!isAdmin && !isTherapist) {
             bot.sendMessage(message.chat.id, messages.helpStudent);
@@ -411,10 +417,9 @@ export const messageHandlers = {
     },
 
     async onPhoto(message: Message): Promise<void> {
-        if(message.photo 
-            && message.caption 
-            && message.caption.startsWith("/createTherapist")) 
-            {
+        if (message.photo
+            && message.caption
+            && message.caption.startsWith("/createTherapist")) {
             await therapistsHandlers.createTherapist(message);
         }
     }

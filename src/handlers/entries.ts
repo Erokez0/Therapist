@@ -14,8 +14,8 @@ export const entriesHandlers = {
      */
     async createWindows(message: Message): Promise<void> {
         try {
-            if(!lib.isTherapist(message)) return;
-            const therapist = (await therapistsServices.findTherapists({telegram: message.from.username}))[0];
+            if (!lib.isTherapist(message)) return;
+            const therapist = (await therapistsServices.findTherapists({ telegram: message.from.username }))[0];
             const paramsArr = message.text.split(/\s/g).splice(1);
             let date: string;
             let formattedDate = paramsArr[0].split(/\D/g).reverse().join("-");
@@ -41,15 +41,15 @@ export const entriesHandlers = {
                     const offset = 10_800_000;
                     const fullDate = new Date(`${date}T${time}:00.000`);
                     await entriesServices.createEntry(
-                        {user: null, therapist: therapist, date: fullDate, isReminded: false}
+                        { user: null, therapist: therapist, date: fullDate, isReminded: false }
                     );
                     isSuccesful = true;
                 } catch (e) {
-                    errors.push(e.message+` на ${date} в ${time}`);
+                    errors.push(e.message + ` на ${date} в ${time}`);
                 }
             }
-            const errorsString = errors.length? `\nОшибки:\n${errors.join("\n")}` : ""
-            const resultMessage = isSuccesful? `Успешно созданы окна на ${paramsArr[0]}${errorsString}` : `Не удалось создать окна записи:\n${errors.join("\n")}`
+            const errorsString = errors.length ? `\nОшибки:\n${errors.join("\n")}` : ""
+            const resultMessage = isSuccesful ? `Успешно созданы окна на ${paramsArr[0]}${errorsString}` : `Не удалось создать окна записи:\n${errors.join("\n")}`
             bot.sendMessage(message.chat.id, resultMessage);
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось создать окна:\n${e.message}`);
@@ -61,8 +61,8 @@ export const entriesHandlers = {
      */
     async getEntries(message: Message): Promise<void> {
         try {
-            if(!lib.isAdmin(message)) return;
-            const entries: Entries[] = await entriesServices.findEntries({user: Not(IsNull())});
+            if (!await lib.isAdmin(message)) return;
+            const entries: Entries[] = await entriesServices.findEntries({ user: Not(IsNull()) });
             const entriesString: string = await lib.entriesToString(entries);
             bot.sendMessage(message.chat.id, entriesString);
         } catch (e) {
@@ -75,9 +75,9 @@ export const entriesHandlers = {
      */
     async getWindows(message: Message): Promise<void> {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             const entriesString: string = await lib.dateWindowsToString();
-            bot.sendMessage(message.chat.id, entriesString, {parse_mode: 'Markdown', disable_web_page_preview: true});
+            bot.sendMessage(message.chat.id, entriesString, { parse_mode: 'Markdown', disable_web_page_preview: true });
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось получить записи:\n${e.message}`);
         }
@@ -88,9 +88,9 @@ export const entriesHandlers = {
      */
     async getMyWindows(message: Message): Promise<void> {
         try {
-            if(!lib.isTherapist(message)) return;
+            if (!lib.isTherapist(message)) return;
             const entriesString: string = await lib.dateWindowsToStringTg(message.from.username);
-            bot.sendMessage(message.chat.id, entriesString, {parse_mode: 'Markdown', disable_web_page_preview: true});
+            bot.sendMessage(message.chat.id, entriesString, { parse_mode: 'Markdown', disable_web_page_preview: true });
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось получить записи:\n${e.message}`);
         }
@@ -102,10 +102,10 @@ export const entriesHandlers = {
      */
     async deleteEntryById(message: Message): Promise<void> {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             const entryId = message.text.split(/\s/g).splice(1)[0];
             if (isNaN(+entryId)) throw new Error('Некорректный id');
-            await entriesServices.deleteEntry({id: +entryId});
+            await entriesServices.deleteEntry({ id: +entryId });
             bot.sendMessage(message.chat.id, "Запись успешно удалена");
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось получить записи:\n${e.message}`);
@@ -117,8 +117,8 @@ export const entriesHandlers = {
      */
     async deleteMyWindows(message: Message): Promise<void> {
         try {
-            if(!lib.isTherapist(message)) return;
-            const therapist = (await therapistsServices.findTherapists({telegram: message.from.username}))[0];
+            if (!lib.isTherapist(message)) return;
+            const therapist = (await therapistsServices.findTherapists({ telegram: message.from.username }))[0];
             const paramsArr = message.text.split(/\s/g).splice(1);
             let date: string;
             let formattedDate = paramsArr[0].split(/\D/g).reverse().join("-");
@@ -135,11 +135,13 @@ export const entriesHandlers = {
             let isSuccesful = false;
             const dateTime = new Date(`${date}T00:00:00.000`);
             if (times.length === 0) {
-                            // @ts-expect-error
-                await entriesServices.deleteEntry({date: And(LessThan(new Date(dateTime.getTime()+86400000)), MoreThanOrEqual(dateTime)), 
-                    therapist: therapist});
-                    bot.sendMessage(message.chat.id, `Успешно удалены окна на ${paramsArr[0]}`);
-                    return;
+                await entriesServices.deleteEntry({
+                    // @ts-expect-error
+                    date: And(LessThan(new Date(dateTime.getTime() + 86400000)), MoreThanOrEqual(dateTime)),
+                    therapist: therapist
+                });
+                bot.sendMessage(message.chat.id, `Успешно удалены окна на ${paramsArr[0]}`);
+                return;
             }
             for (const time of times) {
                 let fullDate;
@@ -151,7 +153,7 @@ export const entriesHandlers = {
                 }
                 try {
                     await entriesServices.deleteEntry(
-                        {date: fullDate, therapist: therapist}
+                        { date: fullDate, therapist: therapist }
                     );
                     isSuccesful = true;
                 } catch {
@@ -159,12 +161,12 @@ export const entriesHandlers = {
                 }
 
             }
-            const errorsString = errors.length? `\nОшибки:\n${errors.join("\n")}` : ""
-            const resultMessage = isSuccesful? `Успешно удалены окна на ${paramsArr[0]}${errorsString}` : `Не удалось удалить окна записи:\n${errors.join("\n")}`
+            const errorsString = errors.length ? `\nОшибки:\n${errors.join("\n")}` : ""
+            const resultMessage = isSuccesful ? `Успешно удалены окна на ${paramsArr[0]}${errorsString}` : `Не удалось удалить окна записи:\n${errors.join("\n")}`
             bot.sendMessage(message.chat.id, resultMessage);
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось удалить окна записи:\n${e.message}`);
-        } 
+        }
     },
 
     /**
@@ -173,9 +175,9 @@ export const entriesHandlers = {
     async remindAndDelete(): Promise<void> {
         const day = 86_400_000; // миллисекунды
         const now = new Date();
-        for (let ix = 0;; ix++) {
+        for (let ix = 0; ; ix++) {
             // @ts-expect-error
-            const entry = (await entriesServices.findEntries({date: LessThan(new Date(now.getTime()+day))}, "asc", 1, ix))[0];
+            const entry = (await entriesServices.findEntries({ date: LessThan(new Date(now.getTime() + day)) }, "asc", 1, ix))[0];
 
             if (!entry) return;
             if (entry.date <= now) {
@@ -192,9 +194,9 @@ export const entriesHandlers = {
                 const messageText = `Напоминаем о вашей записи!\n${dayOfWeek} ${stringDate.split(" ").join(" в ")} к психологу ${therapistName}.\nОстался один день!`;
                 await bot.sendMessage(chatId, messageText);
                 await entriesServices.updateEntry(
-                    {id: entry.id}, 
-                    {isReminded: true});
+                    { id: entry.id },
+                    { isReminded: true });
             }
-        }  
+        }
     }
 }

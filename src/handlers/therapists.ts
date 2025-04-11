@@ -29,7 +29,7 @@ export async function defaultTherapists(): Promise<void> {
 export const therapistsHandlers = {
     async getTherapists(message: Message) {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             const therapists = await therapistsServices.getTherapists();
             bot.sendMessage(message.chat.id, lib.therapistsToString(therapists));
         } catch (e) {
@@ -38,10 +38,10 @@ export const therapistsHandlers = {
     },
     async createTherapist(message: Message) {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             let therapistParamsArr = message.caption.split(/\s/g).splice(1);
-            const [name, telegram, chatId ] = [therapistParamsArr[0], therapistParamsArr[1], +therapistParamsArr[2]];
-            const description  = therapistParamsArr.splice(3).join(" ")
+            const [name, telegram, chatId] = [therapistParamsArr[0], therapistParamsArr[1], +therapistParamsArr[2]];
+            const description = therapistParamsArr.splice(3).join(" ")
             const therapist: therapistData = {
                 name: name,
                 description: description,
@@ -59,10 +59,10 @@ export const therapistsHandlers = {
     },
     async deleteTherapist(message: Message) {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             let id = +message.text.split(/\s/g).splice(1)[0];
-            if(isNaN(id)) throw new Error('Некорректный id');
-            await therapistsServices.deleteTherapist({id: id});
+            if (isNaN(id)) throw new Error('Некорректный id');
+            await therapistsServices.deleteTherapist({ id: id });
             bot.sendMessage(message.chat.id, "Психолог удалён успешно");
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось удалить психолога: \n${e.message}`)

@@ -17,7 +17,7 @@ export async function createDefaultAdmins() {
 export const adminsHandlers = {
     async createAdmin(message: Message): Promise<void> {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             await adminsServices.createAdmin(message.chat.id);
             bot.sendMessage(message.chat.id, "Администратор создан успешно");
         } catch (e) {
@@ -26,7 +26,7 @@ export const adminsHandlers = {
     },
     async deleteAdmin(message: Message): Promise<void> {
         try {
-            if(!lib.isAdmin(message)) return;
+            if (!await lib.isAdmin(message)) return;
             await adminsServices.deleteAdmin(message.chat.id);
             bot.sendMessage(message.chat.id, "Администратор удалён успешно");
         } catch (e) {

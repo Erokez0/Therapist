@@ -39,8 +39,8 @@ export const lib = {
         }
         return result;
     },
-    isAdmin(message: Message): Boolean {
-        return !!adminsServices.findAdmin(message.chat.id);
+    async isAdmin(message: Message): Promise<Boolean> {
+        return !!(await adminsServices.findAdmin(message.chat.id));
     },
     isValidDateString(dateString: string): boolean {
         const matchResult = dateString.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/gi);
