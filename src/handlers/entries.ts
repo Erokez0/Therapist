@@ -15,12 +15,11 @@ export const entriesHandlers = {
     async createWindows(message: Message): Promise<void> {
         try {
             if (!lib.isTherapist(message)) return;
-            const therapist = (await therapistsServices.findTherapists({ telegram: message.from.username }))[0];
+            const therapist = (await therapistsServices.findTherapists({ chatId: message.from.id }))[0];
             const paramsArr = message.text.split(/\s/g).splice(1);
             let date: string;
             let formattedDate = paramsArr[0].split(/\D/g).reverse().join("-");
             const times = paramsArr.slice(1);
-
             try {
                 lib.isValidDateString(formattedDate);
             } catch {
@@ -29,7 +28,7 @@ export const entriesHandlers = {
             }
             date = formattedDate;
             let errors: string[] = [];
-            let isSuccesful = false;
+            let isSuccesfull = false;
             for (const time of times) {
                 try {
                     lib.isValidTime(date, time);
@@ -38,18 +37,17 @@ export const entriesHandlers = {
                     continue;
                 }
                 try {
-                    const offset = 10_800_000;
                     const fullDate = new Date(`${date}T${time}:00.000`);
                     await entriesServices.createEntry(
                         { user: null, therapist: therapist, date: fullDate, isReminded: false }
                     );
-                    isSuccesful = true;
+                    isSuccesfull = true;
                 } catch (e) {
                     errors.push(e.message + ` на ${date} в ${time}`);
                 }
             }
             const errorsString = errors.length ? `\nОшибки:\n${errors.join("\n")}` : ""
-            const resultMessage = isSuccesful ? `Успешно созданы окна на ${paramsArr[0]}${errorsString}` : `Не удалось создать окна записи:\n${errors.join("\n")}`
+            const resultMessage = isSuccesfull ? `Успешно созданы окна на ${paramsArr[0]}${errorsString}` : `Не удалось создать окна записи:\n${errors.join("\n")}`
             bot.sendMessage(message.chat.id, resultMessage);
         } catch (e) {
             bot.sendMessage(message.chat.id, `Не удалось создать окна:\n${e.message}`);

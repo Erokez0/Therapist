@@ -11,7 +11,8 @@ import { adminsHandlers, createDefaultAdmins } from "handlers/admins";
 dotenv.config();
 
 
-const TOKEN = process.env.api_token;export const bot = new TelegramBot(TOKEN);
+const TOKEN = process.env.api_token;
+export const bot = new TelegramBot(TOKEN);
 bot.startPolling().then(() => {
     console.log("Bot started!");
 }).catch((err) => {
@@ -70,17 +71,13 @@ bot.onText(/^\/start$/g, messageHandlers.greeting);
 // ЗАПИСИ
 bot.onText(/^\/getEntries$/, entriesHandlers.getEntries);
 bot.onText(/^\/deleteEntry(\s\d+)+$/g, entriesHandlers.deleteEntryById);
-bot.onText(/^\/help$/, async msg => {
-    await messageHandlers.help(msg);
-})
+bot.onText(/^\/help$/, messageHandlers.help);
 // АДМИНЫ
 bot.onText(/^\/createAdmin\s\d+$/g, adminsHandlers.createAdmin);
 bot.onText(/^\/deleteAdmin\s\d+$/g, adminsHandlers.deleteAdmin);
 // ТЕКСТ
 bot.onText(/^Назад$/g, messageHandlers.signup);
-bot.onText(/^Записаться$/g, async msg => {
-    await messageHandlers.signup(msg);
-});
+bot.onText(/^Записаться$/g, messageHandlers.signup);
 bot.onText(/^(Отмена)|(\/cancel)$/i, messageHandlers.cancel);
 bot.onText(/^Со мной не связались$/i, messageHandlers.noContact);
 bot.on("text", messageHandlers.onText);

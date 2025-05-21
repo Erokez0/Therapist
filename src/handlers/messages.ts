@@ -150,18 +150,18 @@ export const messageHandlers = {
             bot.sendMessage(message.chat.id, "Психолог не найден по имени: " + therapistName);
             return;
         }
-        const therapistPhotoExists = await lib.therapistPhotoExists(therapist.telegram);
+        const therapistPhotoExists = await lib.therapistPhotoExists(therapist.chatId);
         const therapistDescription: string = therapist.description || "Нет описания психолога"
         userStates[message.chat.id] = {
             "chosenTherapist": therapist.chatId,
             "current": Stage.dateChoice
         };
         if (therapistDescription.length > 1024) {
-            if (therapistPhotoExists) await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`);
+            if (therapistPhotoExists) await bot.sendPhoto(message.chat.id, `src/images/${therapist.chatId}.jpg`);
             await bot.sendMessage(message.chat.id, therapistDescription, options);
         } else {
             if (therapistPhotoExists) {
-                await bot.sendPhoto(message.chat.id, `src/images/${therapist.telegram}.jpg`, { caption: therapistDescription, ...options });
+                await bot.sendPhoto(message.chat.id, `src/images/${therapist.chatId}.jpg`, { caption: therapistDescription, ...options });
             } else {
                 await bot.sendMessage(message.chat.id, therapistDescription, options);
             }

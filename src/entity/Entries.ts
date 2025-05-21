@@ -6,7 +6,7 @@ export class Entries {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => Therapists)
+    @ManyToOne(() => Therapists, {onDelete: "CASCADE"})
     @JoinColumn()
     therapist: Therapists
 

@@ -1,4 +1,3 @@
-# for some reason docker compose ignore admins, would be nbetter store admins in db
 services:
 
   db:

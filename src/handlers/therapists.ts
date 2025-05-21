@@ -40,7 +40,7 @@ export const therapistsHandlers = {
         try {
             if (!await lib.isAdmin(message)) return;
             let therapistParamsArr = message.caption.split(/\s/g).splice(1);
-            const [name, telegram, chatId] = [therapistParamsArr[0], therapistParamsArr[1], +therapistParamsArr[2]];
+            const [name, telegram, chatId] = [ therapistParamsArr[0], therapistParamsArr[1].replace(/^@/g, ""), +therapistParamsArr[2] ];
             const description = therapistParamsArr.splice(3).join(" ")
             const therapist: therapistData = {
                 name: name,

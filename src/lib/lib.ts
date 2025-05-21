@@ -64,13 +64,13 @@ export const lib = {
         }
         return result;
     },
-    async therapistPhotoExists(therapistName: string): Promise<boolean> {
+    async therapistPhotoExists(therapistChatId: number): Promise<boolean> {
         let fileNames = await readdir(`src/images`);
-        return fileNames.includes(therapistName+".jpg")
+        return fileNames.includes(therapistChatId+".jpg")
     },
-    async addTherapistPhoto(therapistName: string, readStream: any): Promise<void> {
+    async addTherapistPhoto(therapistChatId: string, readStream: any): Promise<void> {
         try {
-            const newFileName = path.join("src", "images", `${therapistName}.jpg`);
+            const newFileName = path.join("src", "images", `${therapistChatId}.jpg`);
             const writeStream = createWriteStream(newFileName);
             readStream.pipe(writeStream);
         } catch (e) {
