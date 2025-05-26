@@ -12,12 +12,12 @@ import { And, IsNull, LessThan, Like, MoreThan, MoreThanOrEqual } from "typeorm"
 import { adminsServices } from "services/Admins";
 export const lib = {
     usersToString(users: Users[]): string {
-        if(!users.length) return "Нет пользователей";
+        if (!users.length) return "Нет пользователей";
         let result = "";
-        for(let user of users){
+        for (let user of users) {
             result += `id: ${user.id}\nname: ${user.name}\ngroup: ${user.group}\n`;
             if (user.telegram) {
-                result +=`telegram: @${user.telegram}\n\n`;
+                result += `telegram: @${user.telegram}\n\n`;
             } else {
                 result += "\n";
             }
@@ -25,17 +25,12 @@ export const lib = {
         return result;
     },
     async entriesToString(entries: Entries[]): Promise<string> {
-        if(!entries.length) return "Нет записей";
+        if (!entries.length) return "Нет записей";
         let result = "";
-        for(let entry of entries) {
-            const user: Users = (await entriesServices.findOne({id: entry.id})).user;
+        for (let entry of entries) {
+            const user: Users = (await entriesServices.findOne({ id: entry.id })).user;
             const therapist = (await therapistsServices.getTherapistByTelegram(entry.therapist.telegram));
-            result += `ID: ${entry.id}\nПсихолог: ${therapist.name} @${therapist.telegram}\nДата и время: ${lib.timeStampToString(entry.date)}\nПользователь: ${user.name} ${user.group} `;
-            if (user.telegram) {
-                result += `@${user.telegram}\n\n`;
-            } else {
-                result += "\n\n"
-            }
+            result += `ID: ${entry.id}\nПсихолог: ${therapist.name} @${therapist.telegram}\nДата и время: ${lib.timeStampToString(entry.date)}\nСтудент: [${user.name} ${user.group}](tg://user?id=${user.chatId}) `;
         }
         return result;
     },
@@ -48,7 +43,7 @@ export const lib = {
     },
     timeStampToString(timestamp: Date): string {
         const year: number = timestamp.getFullYear();
-        const month: number = timestamp.getMonth()+1;
+        const month: number = timestamp.getMonth() + 1;
         const day: number = timestamp.getDate();
 
         const hours: number = timestamp.getHours();
@@ -57,16 +52,16 @@ export const lib = {
         return result
     },
     therapistsToString(therapists: Therapists[]): string {
-        if(!therapists.length) throw new Error("Нет психологов");
+        if (!therapists.length) throw new Error("Нет психологов");
         let result = "";
-        for(let therapist of therapists){
+        for (let therapist of therapists) {
             result += `id: ${therapist.id}\nname: ${therapist.name}\ntelegram: @${therapist.telegram}\n\n`;
         }
         return result;
     },
     async therapistPhotoExists(therapistChatId: number): Promise<boolean> {
         let fileNames = await readdir(`src/images`);
-        return fileNames.includes(therapistChatId+".jpg")
+        return fileNames.includes(therapistChatId + ".jpg")
     },
     async addTherapistPhoto(therapistChatId: string, readStream: any): Promise<void> {
         try {
@@ -83,10 +78,10 @@ export const lib = {
             return "***Нет окон для записи***";
         }
         entriesHandlers.remindAndDelete();
-        const therapists  = await therapistsServices.getTherapists();
+        const therapists = await therapistsServices.getTherapists();
         for (const therapist of therapists) {
-            
-            const windows = await entriesServices.findEntries({therapist: therapist}, 'asc');
+
+            const windows = await entriesServices.findEntries({ therapist: therapist }, 'asc');
             if (!windows.length) {
                 continue;
             }
@@ -99,10 +94,8 @@ export const lib = {
                 let userString;
                 if (!window.user) {
                     userString = "Свободно";
-                } else if (window.user.telegram) {
-                    userString = `[${window.user.name} ${window.user.group}](https://t.me/${window.user.telegram})`;   
                 } else {
-                    userString = `${window.user.name} ${window.user.group}`;   
+                    userString = `[${window.user.name} ${window.user.group}](tg://user?id=${window.user.chatId})`;
                 }
                 if (prevDate == stringDate) {
                     result += `\t\t\t- ${stringTime} - ${userString}\n`;
@@ -118,7 +111,7 @@ export const lib = {
         let result = "***Ваши окна для записи***\n";
         entriesHandlers.remindAndDelete();
         const therapist = await therapistsServices.getTherapistByTelegram(telegram);
-        const windows = await entriesServices.findEntries({therapist: therapist}, 'asc');
+        const windows = await entriesServices.findEntries({ therapist: therapist }, 'asc');
         if (!windows.length) {
             return "Похоже, у вас нет окон";
         }
@@ -130,11 +123,9 @@ export const lib = {
             let userString;
             if (!window.user) {
                 userString = "Свободно";
-            } else if (window.user.telegram) {
-                userString = `[${window.user.name} ${window.user.group}](https://t.me/${window.user.telegram})`;   
             } else {
-                    userString = `${window.user.name} ${window.user.group}`;   
-                }
+                userString = `[${window.user.name} ${window.user.group}](tg://user?id=${window.user.chatId})`;
+            }
             if (prevDate == stringDate) {
                 result += `\t\t\t- ${stringTime} - ${userString}\n`
             } else {
@@ -153,7 +144,7 @@ export const lib = {
         const isValid = date instanceof Date && isFinite(+date);
         if (!isValid) throw new Error(`Дата "${dateString}" введена неправильно`)
         const now = new Date();
-        now.setHours(0,0,0,0);
+        now.setHours(0, 0, 0, 0);
         const isFuture = date >= now;
         if (!isFuture) throw new Error(`Дата "${dateString}" относится к прошлому`);
         return true
@@ -167,19 +158,21 @@ export const lib = {
         const time = new Date(`${dateString}T${timeString}:00.000`);
         const isValid = time instanceof Date && isFinite(+time);
         const currentTime = new Date();
-        if(!isValid) throw new Error(`Время "${timeString}" введено неправильно`);
+        if (!isValid) throw new Error(`Время "${timeString}" введено неправильно`);
         const isFuture = time.getTime() >= currentTime.getTime();
-        if(!isFuture) throw new Error(`Время "${timeString}" относится к прошлому`);
+        if (!isFuture) throw new Error(`Время "${timeString}" относится к прошлому`);
         return true
     },
     async getFreeDates(therapistChatId: number): Promise<string[]> {
-        const therapist = await therapistsServices.findTherapist({chatId: therapistChatId});
+        const therapist = await therapistsServices.findTherapist({ chatId: therapistChatId });
         const dates = await entriesServices.findEntries(
-            {therapist: therapist, 
-            user: null, 
-            // @ts-expect-error
-            date: MoreThan(new Date())},
-             'asc');
+            {
+                therapist: therapist,
+                user: null,
+                // @ts-expect-error
+                date: MoreThan(new Date())
+            },
+            'asc');
         if (!dates.length) return [];
         let freeDates: string[] = [];
         for (const date of dates) {
@@ -196,10 +189,12 @@ export const lib = {
     async getFreeTimes(therapist: Therapists, dateString: string): Promise<string[]> {
         const dateTime = new Date(`${dateString.split(".").reverse().join("-")}T00:00:00.000`);
         const dates = await entriesServices.findEntries(
-            {therapist: therapist, 
-            user: IsNull(), 
-            // @ts-expect-error
-            date: And(LessThan(new Date(dateTime.getTime()+86400000)), MoreThanOrEqual(dateTime))}, 
+            {
+                therapist: therapist,
+                user: IsNull(),
+                // @ts-expect-error
+                date: And(LessThan(new Date(dateTime.getTime() + 86400000)), MoreThanOrEqual(dateTime))
+            },
             'asc');
         if (!dates.length) return [];
         let freeTimes = [];
@@ -227,13 +222,13 @@ export const lib = {
         return result
     },
     async isTherapist(message: Message): Promise<boolean> {
-        return !!therapistsServices.findTherapist({chatId: message.chat.id});
+        return !!therapistsServices.findTherapist({ chatId: message.chat.id });
     },
     /**
      * Запускает рутиннную функцию напоминаний и удаления неактуальных записей, выполняется каждые 10 минут
      */
     async routine() {
-        const interval = 600_000/20; // миллисекунды
+        const interval = 600_000 / 20; // миллисекунды
         setInterval(
             () => {
                 entriesHandlers.remindAndDelete()

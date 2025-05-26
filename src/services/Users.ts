@@ -13,7 +13,6 @@ export const userServices = {
             const newUser = userRepository.create({
                 name: user.name,
                 group: user.group,
-                telegram: user.telegram,
                 chatId: user.chatId
             });
             await userRepository.save(newUser);

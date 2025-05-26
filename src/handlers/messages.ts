@@ -303,12 +303,7 @@ export const messageHandlers = {
 
             const day = (new Date(date)).getDay();
             const weekday = lib.numToWeekday(day).toLowerCase();
-            let messageText;
-            if (user.telegram) {
-                messageText = `К вам записался [${user.name} ${user.group}](https://t.me/${user.telegram}) на ${weekday} ${prettyDate} в ${time}!`;
-            } else {
-                messageText = `К вам записался ${user.name} ${user.group} на ${weekday} ${prettyDate} в ${time}!`;
-            }
+            const messageText = `К вам записался [${user.name} ${user.group}](tg://user?id=${user.chatId}) на ${weekday} ${prettyDate} в ${time}!`;
             bot.sendMessage(therapist.chatId, messageText, { parse_mode: 'Markdown', disable_web_page_preview: true });
             userStates[chatId] = {
                 'current': 'start'
@@ -397,9 +392,9 @@ export const messageHandlers = {
         const entry = await entriesServices.findOne({ user: user });
         if (!entry) return;
         const therapist = entry.therapist;
-        const userString = `${user.name} ${user.group}${user.telegram ? " @" + user.telegram : ""}`;
-        bot.sendMessage(therapist.chatId, `Похоже, что вы не связались с ${userString}!`);
-        bot.sendMessage(message.chat.id, messages.noContact);
+        console.log(entry.user)
+        bot.sendMessage(therapist.chatId, `Похоже, что вы не связались с [${user.name} ${user.group}](tg://user?id=${entry.user.chatId})!`, {parse_mode: 'Markdown'});
+        bot.sendMessage(message.chat.id, messages.noContact, {parse_mode: 'Markdown'});
     },
 
     async help(message: Message): Promise<void> {
